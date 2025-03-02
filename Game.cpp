@@ -23,7 +23,7 @@ const int OUTLINE_THIKNESS = 10;
 // Constants for FPS control
 const int FPS = 60; // Desired FPS
 const int FRAME_DELAY = 1000 / FPS; // Time per frame in milliseconds
-const int MOVE_VEL = 20;
+const int MOVE_VEL = 200;
 
 std::random_device rd;
 std::mt19937 gen(rd());
@@ -321,23 +321,15 @@ int deltaY = 0;
 
     while(update)
     {
-        // Calculate frame time and introduce a delay if necessary
-        frameTime = SDL_GetTicks() - frameStart; // Time taken to render the frame
-        if (FRAME_DELAY > frameTime) {
-            SDL_Delay(FRAME_DELAY - frameTime); // Wait for the remaining time
-        }
-
         update = false;
         std::vector<Tile> sorted_tiles = tiles;
         SortTiles(sorted_tiles, sort_func);
-        int i = 0;
 
         for(auto it = sorted_tiles.begin(); it != sorted_tiles.end();)
         {
             Tile& tile = *it;
             if(boundary_check(tile)) {
                 ++it;
-                ++i;
                 continue;
             }
             Tile* next_tile = get_next_tile(tile);
@@ -345,37 +337,35 @@ int deltaY = 0;
             {
                 tile.move(deltaX,deltaY);
                 ++it;
-                ++i;
             }
-            else if(tile.value == next_tile->value
-                && std::find_if(blocks.begin(),blocks.end(),[tile](const Tile& t){return t.key == tile.key; }) == blocks.end()
-                && std::find_if(blocks.begin(),blocks.end(),[next_tile](const Tile& t){return t.key == next_tile->key; }) == blocks.end())
+            else if(tile.value == next_tile->value && 
+                std::find_if(blocks.begin(),blocks.end(),[tile](const Tile& t){return t.key == tile.key; }) == blocks.end() && 
+                std::find_if(blocks.begin(),blocks.end(),[next_tile](const Tile& t){return t.key == next_tile->key; }) == blocks.end())
             {
                 if(mergr_check(tile, *next_tile)){
                     tile.move(deltaX, deltaY);
                     ++it;
-                    ++i;
                 }
                 else{
                      auto original_tile_it = std::find_if(sorted_tiles.begin(), sorted_tiles.end(), [next_tile](const Tile& t) { return t.key == next_tile->key; });
-                     if (original_tile_it != tiles.end())
+                     if (original_tile_it != sorted_tiles.end())
                      {
                         original_tile_it->value *= 2; // Update the value in the original `tiles` vector
                      }
                      next_tile->value *= 2;
                      blocks.push_back(*next_tile);
-                     sorted_tiles.erase(sorted_tiles.begin() + i);
+                     it = sorted_tiles.erase(it);
+                     update = true;
+                     continue;
                 }
             }
             else if(move_check(tile, *next_tile))
             {
                 tile.move(deltaX,deltaY);
                 ++it;
-                ++i;
             }
             else{
                 ++it;
-                ++i;
                 continue;
             }
             tile.set_pos(ceil);
@@ -383,6 +373,12 @@ int deltaY = 0;
         }
 
         UpdateTiles(tiles, sorted_tiles);
+
+        // Calculate frame time and introduce a delay if necessary
+        frameTime = SDL_GetTicks() - frameStart; // Time taken to render the frame
+        if (FRAME_DELAY > frameTime) {
+            SDL_Delay(FRAME_DELAY - frameTime); // Wait for the remaining time
+        }
     }
 
 return EndMove(tiles);
@@ -476,7 +472,4 @@ textTexture = nullptr;
 
 }
 
-/*_
-in the above code, the SDL frame rate and Tile moving rate are fast. Some merges are not correct.
-as example | 8 | 8 | 8 | 8 | move Right -> result | | | |16| , but correct result | | |16|16|
-_*/
+
