@@ -23,7 +23,7 @@ const int OUTLINE_THIKNESS = 10;
 // Constants for FPS control
 const int FPS = 60; // Desired FPS
 const int FRAME_DELAY = 1000 / FPS; // Time per frame in milliseconds
-const int MOVE_VEL = 200;
+const int MOVE_VEL = 20;
 
 std::random_device rd;
 std::mt19937 gen(rd());
@@ -48,22 +48,21 @@ SDL_Renderer* renderer;
 SDL_Surface* textSurface;
 SDL_Texture* textTexture;
 
-const int COLORS[][3] = {
-{237, 229, 218},
-{238, 225, 201},
-{243, 178, 122},
-{246, 150, 101},
-{247, 124, 95 },
-{247, 95, 59 },
-{237, 208, 115},
-{237, 204, 99 },
-{236, 202, 80 }};
+const int COLORS[][3] = {{237, 229, 218},
+                        {238, 225, 201},
+                        {243, 178, 122},
+                        {246, 150, 101},
+                        {247, 124, 95 },
+                        {247, 95, 59 },
+                        {237, 208, 115},
+                        {237, 204, 99 },
+                        {236, 202, 80 }};
 
 class Tile
 {
 public:
-int value, row, col, x, y;
-std::string key;
+    int value, row, col, x, y;
+    std::string key;
 
     Tile(){
     }
@@ -112,14 +111,14 @@ std::string key;
     {
         if(ceil)
         {
-            row = std::ceil(y / RECT_HIGHT);
-            col = std::ceil(x / RECT_WIDTH);
+            row = std::ceil((double) y / RECT_HIGHT);
+            col = std::ceil((double) x / RECT_WIDTH);
             setKey(row,col);
         }
         else
         {
-            row = std::floor(y / RECT_HIGHT);
-            col = std::floor(x / RECT_WIDTH);
+            row = std::floor((double)y / RECT_HIGHT);
+            col = std::floor((double)x / RECT_WIDTH);
             setKey(row,col);
         }
     }
@@ -134,38 +133,38 @@ std::string key;
 
 std::tuple<int, int> GetRandomPosition(std::vector<Tile> tiles)
 {
-int row = 0;
-int col = 0;
-std::string key;
-while(true)
-{
-row = dist(gen);
-col = dist(gen);
-key = std::to_string(row)+std::to_string(col);
-if(tiles.size() != 0)
-{
-if(std::find_if(tiles.begin(),tiles.end(),[&](const Tile& t){return t.key == key; }) != tiles.end()) continue;
-else return { row, col };
-}
-else
-break;
-}
-return { row, col };
+    int row = 0;
+    int col = 0;
+    std::string key;
+    while(true)
+    {
+        row = dist(gen);
+        col = dist(gen);
+        key = std::to_string(row)+std::to_string(col);
+        if(tiles.size() != 0)
+        {
+            if(std::find_if(tiles.begin(),tiles.end(),[&](const Tile& t){return t.key == key; }) != tiles.end()) continue;
+            else return { row, col };
+        }
+        else
+            break;
+    }
+    return { row, col };
 }
 
 std::string EndMove(std::vector<Tile>& tiles)
 {
-if(tiles.size() == 16){
-return "Lost";
-}
-auto [row, col] = GetRandomPosition(tiles);
-tiles.emplace_back(Tile(dis(gen) ? 4 : 2, row, col));
-return "continue";
+    if(tiles.size() == 16){
+        return "Lost";
+    }
+    auto [row, col] = GetRandomPosition(tiles);
+    tiles.emplace_back(Tile(dis(gen) ? 4 : 2, row, col));
+    return "continue";
 }
 
 void DrawGrid()
 {
-SDL_SetRenderDrawColor(renderer, 187, 173, 160, 255);
+    SDL_SetRenderDrawColor(renderer, 187, 173, 160, 255);
 
     for(int row{0}; row <= ROWS; row++)
     {
@@ -209,16 +208,16 @@ void DrawMain(std::vector<Tile>& tiles)
 
 void GenerateTiles(std::vector<Tile>& tiles)
 {
-for(int _{0}; _< 2; _++)
-{
-auto [row, col] = GetRandomPosition(tiles);
-tiles.emplace_back(Tile(2,row,col));
-}
+    for(int _{0}; _< 2; _++)
+    {
+        auto [row, col] = GetRandomPosition(tiles);
+        tiles.emplace_back(Tile(2,row,col));
+    }
 }
 
 void SortTiles(std::vector<Tile>& tiles,std::function<bool (const Tile&, const Tile&)> sort_func)
 {
-std::sort(tiles.begin(),tiles.end(),sort_func);
+    std::sort(tiles.begin(),tiles.end(),sort_func);
 }
 
 void UpdateTiles(std::vector<Tile>& tiles, std::vector<Tile>& sorted_tiles)
@@ -233,11 +232,11 @@ void UpdateTiles(std::vector<Tile>& tiles, std::vector<Tile>& sorted_tiles)
 
 std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint32& frameStart, Uint32& frameTime)
 {
-bool update = true;
-bool ceil = false;
-std::vector<Tile> blocks;
-int deltaX = 0;
-int deltaY = 0;
+    bool update = true;
+    bool ceil = false;
+    std::vector<Tile> blocks;
+    int deltaX = 0;
+    int deltaY = 0;
 
     std::function<bool (const Tile&, const Tile&)> sort_func;
     std::function<bool(const Tile&)> boundary_check;
@@ -249,10 +248,9 @@ int deltaY = 0;
     if( key == LEFT)
     {
         sort_func = [](const Tile& a, const Tile& b){return  a.col < b.col; }; // descending
-        boundary_check = [](const Tile& tile){return tile.col == 0; };
+        boundary_check = [](const Tile& tile){ return tile.col == 0; };
         get_next_tile = [&](const Tile& tile)->Tile*
                             {
-                                // tiles[std::to_string(tile.row)+std::to_string(tile.col-1)];
                                 for(auto& t: tiles){
                                     if(t.key == (std::to_string(tile.row) + std::to_string(tile.col-1))) return &t;
                                 }
@@ -270,7 +268,6 @@ int deltaY = 0;
         boundary_check = [](const Tile& tile){return tile.col == (COLS - 1); };
         get_next_tile = [&](const Tile& tile)->Tile*
                             {
-                                // tiles[std::to_string(tile.row)+std::to_string(tile.col-1)];
                                 for(auto& t: tiles){
                                     if(t.key == (std::to_string(tile.row) + std::to_string(tile.col+1))) return &t;
                                 }
@@ -288,7 +285,6 @@ int deltaY = 0;
         boundary_check = [](const Tile& tile){return tile.row == 0; };
         get_next_tile = [&](const Tile& tile)->Tile*
                             {
-                                // tiles[std::to_string(tile.row)+std::to_string(tile.col-1)];
                                 for(auto& t: tiles){
                                     if(t.key == (std::to_string(tile.row-1) + std::to_string(tile.col))) return &t;
                                 }
@@ -306,7 +302,6 @@ int deltaY = 0;
         boundary_check = [](const Tile& tile){return tile.row == (ROWS - 1); };
         get_next_tile = [&](const Tile& tile)->Tile*
                             {
-                                // tiles[std::to_string(tile.row)+std::to_string(tile.col-1)];
                                 for(auto& t: tiles){
                                     if(t.key == (std::to_string(tile.row+1) + std::to_string(tile.col))) return &t;
                                 }
@@ -386,11 +381,11 @@ return EndMove(tiles);
 
 int main()
 {
-window = nullptr;
-renderer = nullptr;
-font = nullptr;
-textSurface = nullptr;
-textTexture = nullptr;
+    window = nullptr;
+    renderer = nullptr;
+    font = nullptr;
+    textSurface = nullptr;
+    textTexture = nullptr;
 
     SDL_Init(SDL_INIT_VIDEO);
     if(!SDL_CreateWindowAndRenderer("2048", WIDTH, HEIGHT, 0, &window, &renderer)){
