@@ -10,6 +10,7 @@
 #include <functional>
 #include <random>
 
+const int WINDOW_HIGHT = 900;
 const int WIDTH = 800;
 const int HEIGHT = 800;
 const int ROWS = 4;
@@ -32,7 +33,7 @@ std::uniform_int_distribution<int> dist(0, 3); // Range [0, 3]
 
 SDL_Color FONT_COLOR = {119, 110, 101, 255};
 
-char SValue[10];
+char SValue[20];
 
 enum Direction
 {
@@ -45,8 +46,10 @@ enum Direction
 TTF_Font* font;
 SDL_Window* window;
 SDL_Renderer* renderer;
-SDL_Surface* textSurface;
-SDL_Texture* textTexture;
+//SDL_Surface* textSurface;
+//SDL_Texture* textTexture;
+
+int score = 0;
 
 const int COLORS[][3] = {{237, 229, 218},
                         {238, 225, 201},
@@ -95,16 +98,21 @@ public:
         SDL_FRect rect{ (float)x, (float)y, (float)RECT_WIDTH, (float)RECT_HIGHT};
         SDL_RenderFillRect(renderer,&rect);
         sprintf(SValue,"%d",value);
-        textSurface = TTF_RenderText_Solid(font, SValue, strlen(SValue), FONT_COLOR);
-        textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+        SDL_Surface* textSurface = TTF_RenderText_Solid(font, SValue, strlen(SValue), FONT_COLOR);
+        SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+
+        int textWidth = textSurface->w;
+        int textHeight = textSurface->h;
+
         SDL_DestroySurface(textSurface);
 
         SDL_FRect textRect;
-        textRect.x = x + (RECT_WIDTH / 2 - textSurface->w / 2);
-        textRect.y = y + (RECT_HIGHT / 2 - textSurface->h / 2);
-        textRect.w = textSurface->w;
-        textRect.h = textSurface->h;
+        textRect.x = x + (RECT_WIDTH / 2 - textHeight / 2)+15;
+        textRect.y = y + (RECT_HIGHT / 2 - textHeight / 2);
+        textRect.w = textWidth;
+        textRect.h = textHeight;
         SDL_RenderTexture(renderer, textTexture, nullptr, &textRect);
+        SDL_DestroyTexture(textTexture); // Cleanup
     }
 
     void set_pos(bool ceil=false)
@@ -152,13 +160,33 @@ std::tuple<int, int> GetRandomPosition(std::vector<Tile> tiles)
     return { row, col };
 }
 
-std::string EndMove(std::vector<Tile>& tiles)
+void DrawScore()
+{
+    std::string s = "SCORE " +  std::to_string(score); 
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, s.c_str(), strlen(s.c_str()), FONT_COLOR);
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+
+    int textWidth = textSurface->w;
+    int textHeight = textSurface->h;
+
+    SDL_DestroySurface(textSurface);
+
+    SDL_FRect textRect{10, HEIGHT + 10, (float)textWidth, (float)textHeight};
+    SDL_RenderTexture(renderer, textTexture, nullptr, &textRect);
+    SDL_DestroyTexture(textTexture);
+}
+
+
+std::string EndMove(std::vector<Tile>& tiles, bool canGenerateNextTile = true)
 {
     if(tiles.size() == 16){
         return "Lost";
     }
-    auto [row, col] = GetRandomPosition(tiles);
-    tiles.emplace_back(Tile(dis(gen) ? 4 : 2, row, col));
+    if(canGenerateNextTile)
+    {
+        auto [row, col] = GetRandomPosition(tiles);
+        tiles.emplace_back(Tile(dis(gen) ? 4 : 2, row, col));
+    }
     return "continue";
 }
 
@@ -188,7 +216,9 @@ void DrawGrid()
         SDL_RenderFillRect(renderer,&line);
     }
 
+    DrawScore();
 }
+
 
 void DrawMain(std::vector<Tile>& tiles)
 {
@@ -237,6 +267,7 @@ std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint32& frameStar
     std::vector<Tile> blocks;
     int deltaX = 0;
     int deltaY = 0;
+    bool can_generate_next_tile = false;
 
     std::function<bool (const Tile&, const Tile&)> sort_func;
     std::function<bool(const Tile&)> boundary_check;
@@ -331,6 +362,7 @@ std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint32& frameStar
             if(!next_tile)
             {
                 tile.move(deltaX,deltaY);
+                can_generate_next_tile = true;
                 ++it;
             }
             else if(tile.value == next_tile->value && 
@@ -339,6 +371,7 @@ std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint32& frameStar
             {
                 if(mergr_check(tile, *next_tile)){
                     tile.move(deltaX, deltaY);
+                    can_generate_next_tile = true;
                     ++it;
                 }
                 else{
@@ -348,15 +381,18 @@ std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint32& frameStar
                         original_tile_it->value *= 2; // Update the value in the original `tiles` vector
                      }
                      next_tile->value *= 2;
+                     score += next_tile->value;
                      blocks.push_back(*next_tile);
                      it = sorted_tiles.erase(it);
                      update = true;
+                     can_generate_next_tile = true;
                      continue;
                 }
             }
             else if(move_check(tile, *next_tile))
             {
                 tile.move(deltaX,deltaY);
+                can_generate_next_tile = true;
                 ++it;
             }
             else{
@@ -376,7 +412,7 @@ std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint32& frameStar
         }
     }
 
-return EndMove(tiles);
+return EndMove(tiles, can_generate_next_tile);
 }
 
 int main()
@@ -384,11 +420,9 @@ int main()
     window = nullptr;
     renderer = nullptr;
     font = nullptr;
-    textSurface = nullptr;
-    textTexture = nullptr;
 
     SDL_Init(SDL_INIT_VIDEO);
-    if(!SDL_CreateWindowAndRenderer("2048", WIDTH, HEIGHT, 0, &window, &renderer)){
+    if(!SDL_CreateWindowAndRenderer("2048", WIDTH, WINDOW_HIGHT, 0, &window, &renderer)){
         std::cerr << "Window Creation Failed: " << std::endl;
         SDL_Quit();
         return -1;
@@ -460,8 +494,6 @@ int main()
             SDL_Delay(FRAME_DELAY - frameTime); // Wait for the remaining time
         }
     }
-
-
 
     return 0;
 
