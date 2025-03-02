@@ -33,7 +33,7 @@ std::uniform_int_distribution<int> dist(0, 3); // Range [0, 3]
 
 SDL_Color FONT_COLOR = {119, 110, 101, 255};
 
-char SValue[20];
+char SValue[10];
 
 enum Direction
 {
@@ -97,6 +97,7 @@ public:
         SDL_SetRenderDrawColor(renderer, color[0], color[1], color[2], 255);
         SDL_FRect rect{ (float)x, (float)y, (float)RECT_WIDTH, (float)RECT_HIGHT};
         SDL_RenderFillRect(renderer,&rect);
+
         sprintf(SValue,"%d",value);
         SDL_Surface* textSurface = TTF_RenderText_Solid(font, SValue, strlen(SValue), FONT_COLOR);
         SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
@@ -107,7 +108,7 @@ public:
         SDL_DestroySurface(textSurface);
 
         SDL_FRect textRect;
-        textRect.x = x + (RECT_WIDTH / 2 - textHeight / 2)+15;
+        textRect.x = x + (RECT_WIDTH / 2 - textWidth / 2);
         textRect.y = y + (RECT_HIGHT / 2 - textHeight / 2);
         textRect.w = textWidth;
         textRect.h = textHeight;
