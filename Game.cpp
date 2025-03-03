@@ -22,8 +22,8 @@ const int RECT_WIDTH = WIDTH / ROWS;
 const int OUTLINE_THIKNESS = 10;
 
 // Constants for FPS control
-const int FPS = 60; // Desired FPS
-const int FRAME_DELAY = 1000 / FPS; // Time per frame in milliseconds
+const Uint64 FPS = 60; // Desired FPS
+const Uint64 FRAME_DELAY = 1000 / FPS; // Time per frame in milliseconds
 const int MOVE_VEL = 20;
 
 std::random_device rd;
@@ -98,18 +98,18 @@ public:
         SDL_FRect rect{ (float)x, (float)y, (float)RECT_WIDTH, (float)RECT_HIGHT};
         SDL_RenderFillRect(renderer,&rect);
 
-        sprintf(SValue,"%d",value);
+        sprintf_s(SValue,"%d",value);
         SDL_Surface* textSurface = TTF_RenderText_Solid(font, SValue, strlen(SValue), FONT_COLOR);
         SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
 
-        int textWidth = textSurface->w;
-        int textHeight = textSurface->h;
+        float textWidth = (float)textSurface->w;
+        float textHeight = (float)textSurface->h;
 
         SDL_DestroySurface(textSurface);
 
         SDL_FRect textRect;
-        textRect.x = x + (RECT_WIDTH / 2 - textWidth / 2);
-        textRect.y = y + (RECT_HIGHT / 2 - textHeight / 2);
+        textRect.x = (float)(x + (RECT_WIDTH / 2 - textWidth / 2));
+        textRect.y = (float)(y + (RECT_HIGHT / 2 - textHeight / 2));
         textRect.w = textWidth;
         textRect.h = textHeight;
         SDL_RenderTexture(renderer, textTexture, nullptr, &textRect);
@@ -120,14 +120,14 @@ public:
     {
         if(ceil)
         {
-            row = std::ceil((double) y / RECT_HIGHT);
-            col = std::ceil((double) x / RECT_WIDTH);
+            row = (int)std::ceil((double) y / RECT_HIGHT);
+            col = (int)std::ceil((double) x / RECT_WIDTH);
             setKey(row,col);
         }
         else
         {
-            row = std::floor((double)y / RECT_HIGHT);
-            col = std::floor((double)x / RECT_WIDTH);
+            row = (int)std::floor((double)y / RECT_HIGHT);
+            col = (int)std::floor((double)x / RECT_WIDTH);
             setKey(row,col);
         }
     }
@@ -200,7 +200,7 @@ void DrawGrid()
         int y = row * RECT_WIDTH;
         SDL_FRect line;
         line.x = 0;
-        row == 0 ? line.y = y : ( row == ROWS ? line.y = y - 10 : line.y = y - 5);
+        row == 0 ? line.y = (float)y : ( row == ROWS ? line.y = (float)(y - 10) : line.y = (float)(y - 5));
         line.w = WIDTH;
         line.h = OUTLINE_THIKNESS;
         SDL_RenderFillRect(renderer,&line);
@@ -210,7 +210,7 @@ void DrawGrid()
     {
         int x = col * RECT_HIGHT;
         SDL_FRect line;
-        col == 0 ? line.x = x : ( col == COLS ? line.x = x - 10 : line.x = x - 5);
+        col == 0 ? line.x = (float)x : ( col == COLS ? line.x = (float)(x - 10) : line.x = (float)(x - 5));
         line.y = 0;
         line.w = OUTLINE_THIKNESS;
         line.h = HEIGHT;
@@ -261,7 +261,7 @@ void UpdateTiles(std::vector<Tile>& tiles, std::vector<Tile>& sorted_tiles)
     DrawMain(tiles);
 }
 
-std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint32& frameStart, Uint32& frameTime)
+std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint64& frameStart, Uint64& frameTime)
 {
     bool update = true;
     bool ceil = false;
@@ -409,7 +409,7 @@ std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint32& frameStar
         // Calculate frame time and introduce a delay if necessary
         frameTime = SDL_GetTicks() - frameStart; // Time taken to render the frame
         if (FRAME_DELAY > frameTime) {
-            SDL_Delay(FRAME_DELAY - frameTime); // Wait for the remaining time
+            SDL_Delay((Uint32)(FRAME_DELAY - frameTime)); // Wait for the remaining time
         }
     }
 
@@ -452,8 +452,8 @@ int main()
     Direction dir = RIGHT;
 
     // Variables for FPS calculation
-    Uint32 frameStart;
-    Uint32 frameTime;
+    Uint64 frameStart;
+    Uint64 frameTime;
 
     std::vector<Tile> tiles;
     tiles.reserve(16);
@@ -492,7 +492,7 @@ int main()
         // Calculate frame time and introduce a delay if necessary
         frameTime = SDL_GetTicks() - frameStart; // Time taken to render the frame
         if (FRAME_DELAY > frameTime) {
-            SDL_Delay(FRAME_DELAY - frameTime); // Wait for the remaining time
+            SDL_Delay((Uint32)(FRAME_DELAY - frameTime)); // Wait for the remaining time
         }
     }
 
