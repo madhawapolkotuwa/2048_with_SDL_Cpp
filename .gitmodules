@@ -1,0 +1,8 @@
+
+
+[submodule "extern/SDL3_ttf"]
+	path = extern/SDL3_ttf
+	url = https://github.com/libsdl-org/SDL_ttf.git
+[submodule "extern/SDL3"]
+	path = extern/SDL3
+	url = https://github.com/libsdl-org/SDL.git
