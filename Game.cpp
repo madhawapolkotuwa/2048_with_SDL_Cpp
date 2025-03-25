@@ -1,11 +1,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <iostream>
-#include <tuple>
-#include <map>
 #include <string>
-#include <algorithm>
-#include <cmath>
 #include <vector>
 #include <functional>
 #include <random>
@@ -59,7 +55,8 @@ const int COLORS[][3] = {{237, 229, 218},
                         {247, 95, 59 },
                         {237, 208, 115},
                         {237, 204, 99 },
-                        {236, 202, 80 }};
+                        {236, 202, 80 },
+                        {60,  58,  50}};
 
 class Tile
 {
@@ -83,11 +80,17 @@ public:
     void setKey(int row, int col){
         this->key = std::to_string(row) + std::to_string(col);
     }
-
     const int* getColor() const
     {
+        const int* color;
         int color_index = static_cast<int>(std::log2(value));
-        auto color = COLORS[color_index];
+        
+        if(color_index < 9){
+            color = COLORS[color_index];
+
+        }else{
+            color = COLORS[9];
+        }
         return color;
     }
 
@@ -177,7 +180,6 @@ void DrawScore()
     SDL_DestroyTexture(textTexture);
 }
 
-
 std::string EndMove(std::vector<Tile>& tiles, bool canGenerateNextTile = true)
 {
     if(tiles.size() == 16){
@@ -219,7 +221,6 @@ void DrawGrid()
 
     DrawScore();
 }
-
 
 void DrawMain(std::vector<Tile>& tiles)
 {
@@ -270,11 +271,11 @@ std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint64& frameStar
     int deltaY = 0;
     bool can_generate_next_tile = false;
 
-    std::function<bool (const Tile&, const Tile&)> sort_func;
-    std::function<bool(const Tile&)> boundary_check;
-    std::function<Tile* (const Tile&)> get_next_tile;
-    std::function<bool(const Tile&, const Tile&)> mergr_check;
-    std::function<bool(const Tile&, const Tile&)> move_check;
+    std::function<bool (const Tile&, const Tile&)>  sort_func;
+    std::function<bool(const Tile&)>                boundary_check;
+    std::function<Tile* (const Tile&)>              get_next_tile;
+    std::function<bool(const Tile&, const Tile&)>   merge_check;
+    std::function<bool(const Tile&, const Tile&)>   move_check;
 
 
     if( key == LEFT)
@@ -288,7 +289,7 @@ std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint64& frameStar
                                 }
                                 return nullptr;
                             };
-        mergr_check = [](const Tile& tile,const Tile& next_tile){return tile.x > (next_tile.x + MOVE_VEL);};
+        merge_check = [](const Tile& tile,const Tile& next_tile){return tile.x > (next_tile.x + MOVE_VEL);};
         move_check = [](const Tile& tile,const Tile& next_tile){return tile.x > (next_tile.x + RECT_WIDTH + MOVE_VEL);};
         ceil = true;
         deltaX = -MOVE_VEL;
@@ -305,7 +306,7 @@ std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint64& frameStar
                                 }
                                 return nullptr;
                             };
-        mergr_check = [](const Tile& tile,const Tile& next_tile){return tile.x < (next_tile.x - MOVE_VEL);};
+        merge_check = [](const Tile& tile,const Tile& next_tile){return tile.x < (next_tile.x - MOVE_VEL);};
         move_check = [](const Tile& tile,const Tile& next_tile){return (tile.x + RECT_WIDTH + MOVE_VEL) < next_tile.x;};
         ceil = false;
         deltaX = MOVE_VEL;
@@ -322,7 +323,7 @@ std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint64& frameStar
                                 }
                                 return nullptr;
                             };
-        mergr_check = [](const Tile& tile,const Tile& next_tile){return tile.y > (next_tile.y + MOVE_VEL);};
+        merge_check = [](const Tile& tile,const Tile& next_tile){return tile.y > (next_tile.y + MOVE_VEL);};
         move_check = [](const Tile& tile,const Tile& next_tile){return  tile.y > (next_tile.y + RECT_HIGHT + MOVE_VEL);};
         ceil = true;
         deltaX = 0;
@@ -339,7 +340,7 @@ std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint64& frameStar
                                 }
                                 return nullptr;
                             };
-        mergr_check = [](const Tile& tile,const Tile& next_tile){return tile.y < (next_tile.y - MOVE_VEL);};
+        merge_check = [](const Tile& tile,const Tile& next_tile){return tile.y < (next_tile.y - MOVE_VEL);};
         move_check = [](const Tile& tile,const Tile& next_tile){return (tile.y + RECT_HIGHT + MOVE_VEL) < next_tile.y;};
         ceil = false;
         deltaX = 0;
@@ -370,7 +371,7 @@ std::string MoveTiles(std::vector<Tile>& tiles, Direction key, Uint64& frameStar
                 std::find_if(blocks.begin(),blocks.end(),[tile](const Tile& t){return t.key == tile.key; }) == blocks.end() && 
                 std::find_if(blocks.begin(),blocks.end(),[next_tile](const Tile& t){return t.key == next_tile->key; }) == blocks.end())
             {
-                if(mergr_check(tile, *next_tile)){
+                if(merge_check(tile, *next_tile)){
                     tile.move(deltaX, deltaY);
                     can_generate_next_tile = true;
                     ++it;
@@ -499,5 +500,4 @@ int main()
     return 0;
 
 }
-
 
