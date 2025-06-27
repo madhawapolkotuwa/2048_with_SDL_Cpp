@@ -8,5 +8,5 @@
 mkdir Build
 cd ./Build/
 cmake ..
-camke --build .
+cmake --build .
 ```
